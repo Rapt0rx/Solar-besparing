@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Solar"><meta name="theme-color" content="#17365d">
+<title>Solar savings</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--tx:#17212f;--mut:#667085;--ln:#e3e8ef;--pv:#e8a317;--ld:#2f6fd0;--ok:#1a9b5a;--bad:#d9534f;--bar:#e3e8ef;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1520;--card:#18212f;--tx:#e8edf5;--mut:#98a4b8;--ln:#2a3548;--pv:#f2b73a;--ld:#6aa2f5;--ok:#3ec585;--bar:#2a3548;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1520;--card:#18212f;--tx:#e8edf5;--mut:#98a4b8;--ln:#2a3548;--pv:#f2b73a;--ld:#6aa2f5;--ok:#3ec585;--bar:#2a3548;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;max-width:640px;margin:0 auto;padding:12px 12px 40px}
+h1{font-size:20px;margin:6px 4px 2px}.sub{color:var(--mut);font-size:12px;margin:0 4px 12px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:20px 4px 8px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:10px}
+.hero{display:flex;justify-content:space-between;gap:10px}.big{font-size:30px;font-weight:700;line-height:1.1}.lbl{font-size:12px;color:var(--mut)}
+.prog{height:10px;border-radius:6px;background:var(--bar);overflow:hidden;margin:10px 0 4px}.prog i{display:block;height:100%;background:var(--ok);border-radius:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid .card{margin:0}.v{font-size:21px;font-weight:650}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--ln)}th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600;font-size:11px}
+.wrap{overflow-x:auto}svg{width:100%;height:auto;display:block}.lg{display:flex;gap:14px;font-size:12px;color:var(--mut);margin-top:6px;flex-wrap:wrap}.lg b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.note{font-size:12px;color:var(--mut);margin:8px 4px}
+</style></head><body>
+<h1>☀️ Solar savings</h1><p class="sub"><span id="asof"></span> · <span id="st"></span> <a href="#" id="rf" style="color:var(--ld)">Refresh</a> · <a href="#" id="cn" style="color:var(--mut)">Set sheet link</a></p>
+<div class="card" id="herocard"><div class="hero"><div><div class="lbl">Saved so far</div><div class="big" id="saved"></div></div><div style="text-align:right"><div class="lbl">Installed cost</div><div class="big" id="cost" style="font-size:20px"></div></div></div>
+<div class="prog"><i id="pb"></i></div><div class="lbl" id="pbt"></div></div>
+<h2 id="payh">Payback outlook</h2><div class="card" id="paycard"><table id="pay"></table><p class="note" style="margin:8px 0 0">At current use the saving is about <b id="mon"></b> a month. 100% is an upper bound from summer sun; 80% and 60% are illustrative winter haircuts, not measured.</p></div>
+<h2>Energy so far</h2><div class="grid" id="kp"></div>
+<h2>Daily solar vs household use (kWh)</h2><div class="card"><svg id="c1" viewBox="0 0 360 170"></svg><div class="lg"><span><b style="background:var(--pv)"></b>Solar</span><span><b style="background:var(--ld)"></b>Household use</span></div></div>
+<h2 id="hl">Average day (kW)</h2><div class="card"><svg id="c2" viewBox="0 0 360 170"></svg><div class="lg"><span><b style="background:var(--pv)"></b>Solar</span><span><b style="background:var(--ld)"></b>Household use</span><span><b style="background:var(--ok)"></b>Battery full</span></div><p class="note" style="margin:8px 0 0">Once the battery is full (about 10:00–15:00), solar output is throttled to match the load.</p></div>
+<h2>Battery, last 7 days</h2><div class="card wrap"><table id="bt"></table></div>
+<h2>All days</h2><div class="card wrap"><table id="dt"></table></div>
+<p class="note">Live from your Google Sheet (tab “App data”). Tariff: block rates in your sheet.</p>
+<script>
+const CSV_URL='';  // optional: paste your published-CSV link here, or use "Set sheet link" in the app
+const SNAP=[["kpi","cost",135000,"","","","","",""],["kpi","saved",2678.69175457,"","","","","",""],["kpi","gen",1006.2995,"","","","","",""],["kpi","use",832.816111,"","","","","",""],["kpi","grid",4.6586,"","","","","",""],["kpi","selfc",0.822973191380896,"","","","","",""],["kpi","cover",0.994406208119093,"","","","","",""],["kpi","month",3676.01678769231,"","","","","",""],["kpi","annual",44112.2014523077,"","","","","",""],["kpi","loss",6.24145,"","","","","",""],["kpi","lossp",0.156451173702434,"","","","","",""],["kpi","from",46315,"","","","","",""],["kpi","to",46342,"","","","","",""],["kpi","hourly_label","10\u201315 Nov","","","","","",""],["hour",0,0.003,0.414,0,"","","",""],["hour",1,0.003,0.366,0,"","","",""],["hour",2,0.003,0.36,0,"","","",""],["hour",3,0.003,0.326,0,"","","",""],["hour",4,0.017,0.351,0,"","","",""],["hour",5,0.31,1.196,0,"","","",""],["hour",6,1.907,1.339,0,"","","",""],["hour",7,4.303,2.666,0,"","","",""],["hour",8,5.882,2.615,0,"","","",""],["hour",9,6.356,2.367,0.096,"","","",""],["hour",10,4.881,2.704,0.525,"","","",""],["hour",11,2.611,2.251,0.887,"","","",""],["hour",12,4.007,4.069,0.692,"","","",""],["hour",13,3.543,3.046,0.542,"","","",""],["hour",14,3.467,2.896,0.617,"","","",""],["hour",15,1.918,1.714,0.679,"","","",""],["hour",16,0.802,0.704,0.635,"","","",""],["hour",17,0.407,0.907,0.331,"","","",""],["hour",18,0.099,1.046,0,"","","",""],["hour",19,0.005,0.893,0,"","","",""],["hour",20,0.004,0.775,0,"","","",""],["hour",21,0.004,0.603,0,"","","",""],["hour",22,0.003,0.413,0,"","","",""],["hour",23,0.003,0.394,0,"","","",""],["day",46315,20.573,0.4158,12.6411,"","","",""],["day",46316,31.4335,0.3651,30.128,"","","",""],["day",46317,34.3608,0.1632,28.0808,"","","",""],["day",46318,36.5747,0.1009,31.5947,"","","",""],["day",46319,40.6186,0.072,34.8489,"","","",""],["day",46320,29.2033,0.0302,23.6762,"","","",""],["day",46321,31.4623,0.2007,25.6476,"","","",""],["day",46322,45.4624,0.052,38.8242,"","","",""],["day",46323,38.1938,0.0781,28.5926,"","","",""],["day",46324,37.4331,0.0796,33.0247,"","","",""],["day",46325,40.4742,0.0569,35.0484,"","","",""],["day",46326,27.1084,0.0613,22.532,"","","",""],["day",46327,39.2365,0.8854,30.8401,"","","",""],["day",46328,33.5241,0.5551,30.375,"","","",""],["day",46329,32.5207,0.6204,27.1435,"","","",""],["day",46330,38.9187,0.4402,31.0151,"","","",""],["day",46331,38.1514,0.0347,31.0699,"","","",""],["day",46332,34.0033,0.055,28.1218,"","","",""],["day",46333,29.5378,0.0233,22.0756,"","","",""],["day",46334,29.922,0,22.799,"","","",""],["day",46335,28.6501,0,23.7167,"","","",""],["day",46336,43.7476,0,36.7084,6.4543,34,100,4.1],["day",46337,39.1272,0,35.4788,6.4252,39,100,7.8],["day",46338,47.4077,0.3681,40.1324,6.3368,35,100,4],["day",46339,46.953,0,40.3104,6.4667,39,100,6.4],["day",46340,32.8701,0.0006,24.9275,5.7085,39,100,2.8],["day",46341,33.3001,0,29.0772,6.0572,53,100,4.7],["day",46342,45.5311,0,34.3855,5.3085,42,100,2.9]];
+const R=n=>'R\u00a0'+Math.round(n).toLocaleString('en-ZA').replace(/,/g,'\u00a0'),P=n=>(n*100).toFixed(1)+'%',$=i=>document.getElementById(i);
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?null:n};
+const dstr=(s,y)=>{const d=new Date(Math.round((s-25569)*864e5));return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC',...(y?{year:'numeric'}:{})})};
+function parseCSV(t){const out=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}else if(c=='"')q=true;else if(c==','){row.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;row.push(f);f='';out.push(row);row=[]}else f+=c}if(f||row.length){row.push(f);out.push(row)}return out.slice(1)}
+function build(rows){const k={},days=[],hours=[];let hl='';
+for(const r of rows){if(r[0]=='kpi'){k[r[1]]=r[1]=='hourly_label'?r[2]:num(r[2])}else if(r[0]=='hour'){hours.push([num(r[2])||0,num(r[3])||0,num(r[4])||0])}else if(r[0]=='day'&&num(r[1])!=null){days.push([dstr(num(r[1])),num(r[2]),num(r[3]),num(r[4]),num(r[5]),num(r[6]),num(r[7]),num(r[8])])}}
+return{k,days,hours}}
+const sv=(a,b)=>{try{localStorage.setItem(a,b)}catch(e){}},gt=a=>{try{return localStorage.getItem(a)}catch(e){return null}};
+async function load(){const url=CSV_URL||gt('csvurl');
+ if(!url){render(build(SNAP),'Demo data – not connected');return}
+ try{const ctl=new AbortController();setTimeout(()=>ctl.abort(),12000);const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{signal:ctl.signal,cache:'no-store'});if(!r.ok)throw 0;const t=await r.text();const D=build(parseCSV(t));if(!D.days.length)throw 0;sv('lastcsv',t);sv('lastat',String(Date.now()));render(D,'Live · '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}))}
+ catch(e){const t=gt('lastcsv');if(t){const at=new Date(+gt('lastat')||0);render(build(parseCSV(t)),'Offline · saved '+at.toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}else render(build(SNAP),'Can’t reach sheet – demo data')}}
+function render(D,status){const K=D.k;$('st').textContent=status;
+$('asof').textContent='Data '+dstr(K.from)+' – '+dstr(K.to,1);
+$('saved').textContent=R(K.saved);
+const hasCost=K.cost>0;$('herocard').querySelector('.hero > div:last-child').style.display=hasCost?'':'none';$('paycard').style.display=$('payh').style.display=hasCost?'':'none';
+if(hasCost){$('cost').textContent=R(K.cost);const pc=K.saved/K.cost;$('pb').style.width=Math.max(pc*100,1)+'%';$('pbt').textContent=P(pc)+' of the investment recovered · '+R(K.cost-K.saved)+' to go';
+$('mon').textContent=R(K.month);$('pay').innerHTML='<tr><th>Share realised</th><th>Saving / year</th><th>Payback</th></tr>'+[1,.8,.6].map(f=>`<tr><td>${f*100}%</td><td>${R(K.annual*f)}</td><td><b>${(K.cost/(K.annual*f)).toFixed(1)} yrs</b></td></tr>`).join('')}else{$('pbt').textContent='';$('pb').style.display='none'}
+$('kp').innerHTML=[['Solar generated',Math.round(K.gen)+' kWh'],['Household use',Math.round(K.use)+' kWh'],['Bought from grid',K.grid.toFixed(1)+' kWh'],['Covered by solar/battery',P(K.cover)],['Solar reaching the house',P(K.selfc)],['System losses / day',K.loss.toFixed(1)+' kWh']].map(x=>`<div class="card"><div class="lbl">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
+$('hl').textContent='Average day, '+K.hourly_label+' (kW)';
+const n=D.days.length,W=360,H=150,pl=26,mx=Math.max(...D.days.map(d=>Math.max(d[1],d[3]))),y=v=>H-8-(v/mx)*(H-20),bw=(W-pl)/n;
+let h=[0,.5,1].map(t=>{const v=mx*t,yy=y(v);return`<line x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--ln)"/><text x="0" y="${yy+3}" font-size="9" fill="var(--mut)">${Math.round(v)}</text>`}).join('');
+D.days.forEach((d,i)=>{const x=pl+i*bw;h+=`<rect x="${x+.5}" y="${y(d[1])}" width="${Math.max(bw/2-.5,.5)}" height="${H-8-y(d[1])}" fill="var(--pv)"/><rect x="${x+bw/2}" y="${y(d[3])}" width="${Math.max(bw/2-.5,.5)}" height="${H-8-y(d[3])}" fill="var(--ld)"/>`;if(i%Math.ceil(n/4)==0)h+=`<text x="${x}" y="${H+8}" font-size="9" fill="var(--mut)">${d[0]}</text>`});$('c1').innerHTML=h;
+const mh=Math.ceil(Math.max(...D.hours.map(q=>Math.max(q[0],q[1])))),hx=i=>22+i*338/23,hy=v=>H-8-(v/mh)*(H-20);
+h=[0,mh/2,mh].map(v=>`<line x1="22" x2="${W}" y1="${hy(v)}" y2="${hy(v)}" stroke="var(--ln)"/><text x="0" y="${hy(v)+3}" font-size="9" fill="var(--mut)">${v}</text>`).join('');
+D.hours.forEach((q,i)=>{if(q[2]>0)h+=`<rect x="${hx(i)-5}" y="${H-8-q[2]*14}" width="10" height="${q[2]*14}" fill="var(--ok)" opacity=".45"/>`});
+const ln=(j,c)=>`<polyline fill="none" stroke="var(${c})" stroke-width="2.2" points="${D.hours.map((q,i)=>hx(i).toFixed(1)+','+hy(q[j]).toFixed(1)).join(' ')}"/>`;
+h+=ln(0,'--pv')+ln(1,'--ld');[0,6,12,18,23].forEach(i=>h+=`<text x="${hx(i)-6}" y="${H+8}" font-size="9" fill="var(--mut)">${String(i).padStart(2,'0')}:00</text>`);$('c2').innerHTML=h;
+const dd=D.days.filter(d=>d[4]!==null).slice(-7);
+$('bt').innerHTML='<tr><th>Day</th><th>SOC min</th><th>SOC max</th><th>Hrs full</th><th>Loss kWh</th></tr>'+dd.map(d=>`<tr><td>${d[0]}</td><td>${d[5]}%</td><td>${d[6]}%</td><td>${d[7]}</td><td>${d[4].toFixed(1)}</td></tr>`).join('');
+$('dt').innerHTML='<tr><th>Day</th><th>Solar</th><th>Use</th><th>Grid</th></tr>'+D.days.slice().reverse().map(d=>`<tr><td>${d[0]}</td><td>${d[1].toFixed(1)}</td><td>${d[3].toFixed(1)}</td><td>${d[2].toFixed(2)}</td></tr>`).join('')}
+$('rf').onclick=e=>{e.preventDefault();load()};
+$('cn').onclick=e=>{e.preventDefault();const u=prompt('Paste the “Publish to web” CSV link for the App data tab (leave empty to clear):',gt('csvurl')||'');if(u!==null){sv('csvurl',u.trim());load()}};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+load();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
