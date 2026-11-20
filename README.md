@@ -20,3 +20,6 @@ iPhone: Safari -> Share -> Add to Home Screen. Android: Chrome menu -> Install a
 - Privacy: GitHub Pages is public, and a published-to-web sheet is readable by anyone with the long link. To keep the installed cost out of the app, clear Solar Dashboard F5 (or the "cost" cell in App data).
 - Adding days: paste new Solar Assistant totals into the **Solar Assistant data** sheet and copy the formulas in columns I, M, N down. App data covers rows 2-300.
 - Google may take a few minutes to refresh the published CSV after you edit the sheet.
+
+## Versions
+See `CHANGELOG.md` for the history and how to release a change. The running version is shown in the app footer.

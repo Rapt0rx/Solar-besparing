@@ -1,4 +1,4 @@
-const V='solar-v3',SHELL=['./','index.html','manifest.json','icon-192.png','icon-512.png'],FONT=['fonts.googleapis.com','fonts.gstatic.com'];
+const VERSION='1.3.0',V='solar-v'+VERSION,SHELL=['./','index.html','manifest.json','icon-192.png','icon-512.png'],FONT=['fonts.googleapis.com','fonts.gstatic.com'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // Fonts: cache after first load. App files: network first, cache fallback. Sheet data is handled by the page.
