@@ -11,10 +11,10 @@
 <style>
 :root{--bg:#eef1f6;--ink:#0e1b33;--mut:#5b6880;--ln:#d7dee9;--sun:#f2a20c;--use:#2e6be6;--ok:#1d9e74;--soft:#e2e8f2;--panel:#17398f;
 --hd:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;--bd:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
 @media (prefers-color-scheme:dark){:root{--bg:#0a1224;--ink:#e7ecf7;--mut:#93a0ba;--ln:#223050;--sun:#f5b02e;--use:#6c9bff;--ok:#35c79a;--soft:#152140;color-scheme:dark}}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--bd);max-width:560px;margin:0 auto;padding:10px 16px 48px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--bd);max-width:560px;margin:0 auto;padding:10px 16px calc(92px + env(safe-area-inset-bottom,0px))}
 button{font:inherit;color:inherit}:focus-visible{outline:2px solid var(--use);outline-offset:2px}
 .top{display:flex;justify-content:space-between;align-items:center;padding:6px 0 12px}.brand{font:700 20px var(--hd);letter-spacing:-.01em}
 .pill{display:flex;align-items:center;gap:8px;border:1px solid var(--ln);background:transparent;border-radius:99px;padding:6px 12px;font-size:13px;color:var(--mut);cursor:pointer}
@@ -43,59 +43,99 @@ details{margin-top:28px;border-top:1px solid var(--ln)}summary{padding:14px 0;fo
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}th,td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--ln)}th:first-child,td:first-child{text-align:left}th{font-weight:500;color:var(--mut);font-size:12px}
 .foot{margin-top:30px;color:var(--mut);font-size:13px}.foot button{background:none;border:0;padding:0;text-decoration:underline;color:inherit;cursor:pointer}
 @media (prefers-reduced-motion:reduce){#fill{transition:none}}
+
+.page[hidden]{display:none}h2:first-child{margin-top:8px}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.nav div{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;font-size:12px;color:var(--mut);text-decoration:none;font-weight:500}
+.nav a[aria-current=page]{color:var(--ink)}.nav a[aria-current=page] svg{color:var(--use)}.nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mbig{font:700 34px/1.1 var(--hd);letter-spacing:-.02em}.msub{color:var(--mut);margin:2px 0 12px;font-size:14px}
+.mc{border-top:1px solid var(--ln);padding:16px 0}.mc .mh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}.mc .mh b{font:650 18px var(--hd)}.tag{font-size:12px;color:var(--mut)}
+.msav{font:700 28px/1.1 var(--hd);letter-spacing:-.02em;margin-bottom:12px}.msav small{font:400 13px var(--bd);color:var(--mut);letter-spacing:0}
 </style></head><body>
 <header class="top"><div class="brand">Solar</div><button class="pill" id="rf" aria-label="Refresh data"><span class="dot"></span><span id="st">Loading</span></button></header>
-<section class="hero" id="hero"><h1 class="big" id="saved">R 0</h1><p class="since" id="since"></p>
+<main>
+<section class="page" id="p-home" hidden>
+<div class="hero" id="hero"><h1 class="big" id="saved">R 0</h1><p class="since" id="since"></p>
 <svg class="bat" viewBox="0 0 300 70" role="img" aria-label="Share of the installed cost paid back"><rect x="2" y="2" width="284" height="66" rx="14" fill="none" stroke="#fff" stroke-width="3"/><rect x="288" y="22" width="9" height="26" rx="3" fill="#fff"/><rect x="9" y="9" width="270" height="52" rx="8" fill="rgba(255,255,255,.14)"/><rect id="fill" x="9" y="9" width="270" height="52" rx="8"/><g stroke="#17398f" stroke-width="1.5" opacity=".6"><path d="M36 9v52M63 9v52M90 9v52M117 9v52M144 9v52M171 9v52M198 9v52M225 9v52M252 9v52"/></g></svg>
-<p class="pct" id="pct"></p>
-<div class="rng"><p id="pay"></p><div class="trk" id="trk"></div><small id="pn"></small></div></section>
+<p class="pct" id="pct"></p><div class="rng"><p id="pay"></p><div class="trk" id="trk"></div><small id="pn"></small></div></div>
+<h2 id="mt">This month</h2><div class="rd" id="mo"></div>
+<h2>Latest day</h2><div class="rd" id="ld"></div>
+</section>
+<section class="page" id="p-days" hidden>
 <h2>Day by day</h2>
 <div class="chips" id="chips"><button data-r="14">14 days</button><button data-r="30">30 days</button><button data-r="0">All</button></div>
 <div class="rd" id="rd"></div>
 <svg id="bars" viewBox="0 0 360 140" tabindex="0" role="img" aria-label="Daily solar output with home use marked. Tap a day, or use the arrow keys."></svg>
 <div class="lg"><span><b style="background:var(--sun)"></b>Solar made</span><span><b style="background:var(--use);height:3px;vertical-align:2px"></b>Home used</span></div>
-<h2>Totals so far</h2><div id="led"></div>
+<h2>All days</h2><table id="dt"></table>
+</section>
+<section class="page" id="p-months" hidden>
+<h2 id="th">Since the start</h2><div id="led"></div>
+<h2>Month by month</h2><div id="ml"></div>
+</section>
+<section class="page" id="p-battery" hidden>
+<h2>Battery</h2><div id="bl"></div>
+<h2>Charge, last 7 days</h2><div id="soc"></div>
 <h2>A typical day</h2><svg id="day" viewBox="0 0 360 156" role="img" aria-label="Average solar output and home use by hour"></svg>
 <div class="lg"><span><b style="background:var(--sun)"></b>Solar</span><span><b style="background:var(--use);height:3px;vertical-align:2px"></b>Home use</span><span><b style="background:var(--ok)"></b>Battery full</span></div>
 <p class="note" id="dn"></p>
-<h2>Battery charge</h2><div id="soc"></div>
-<details><summary>All days</summary><table id="dt"></table></details>
+</section>
+</main>
 <p class="foot">Numbers come from your Google Sheet (tab App data). <button id="cn">Change sheet link</button></p>
+<nav class="nav" aria-label="Pages"><div>
+<a href="#home" id="n-home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>Home</a>
+<a href="#days" id="n-days"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-8"/></svg>Days</a>
+<a href="#months" id="n-months"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Months</a>
+<a href="#battery" id="n-battery"><svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="17" height="10" rx="2.5"/><path d="M22 10.5v3M6 10v4M10 10v4"/></svg>Battery</a>
+</div></nav>
 <script>
 const CSV_URL='';
-const SNAP=[["kpi","cost",135000,"","","","","",""],["kpi","saved",2808.8875,"","","","","",""],["kpi","gen",1039.95,"","","","","",""],["kpi","use",862.6775,"","","","","",""],["kpi","grid",4.6586,"","","","","",""],["kpi","selfc",0.8251,"","","","","",""],["kpi","cover",0.9946,"","","","","",""],["kpi","month",3697.3774,"","","","","",""],["kpi","annual",44368.529,"","","","","",""],["kpi","loss",6.24145,"","","","","",""],["kpi","lossp",0.156451173702434,"","","","","",""],["kpi","from",46315,"","","","","",""],["kpi","to",46343,"","","","","",""],["kpi","hourly_label","10\u201315 Nov","","","","","",""],["hour",0,0.003,0.414,0,"","","",""],["hour",1,0.003,0.366,0,"","","",""],["hour",2,0.003,0.36,0,"","","",""],["hour",3,0.003,0.326,0,"","","",""],["hour",4,0.017,0.351,0,"","","",""],["hour",5,0.31,1.196,0,"","","",""],["hour",6,1.907,1.339,0,"","","",""],["hour",7,4.303,2.666,0,"","","",""],["hour",8,5.882,2.615,0,"","","",""],["hour",9,6.356,2.367,0.096,"","","",""],["hour",10,4.881,2.704,0.525,"","","",""],["hour",11,2.611,2.251,0.887,"","","",""],["hour",12,4.007,4.069,0.692,"","","",""],["hour",13,3.543,3.046,0.542,"","","",""],["hour",14,3.467,2.896,0.617,"","","",""],["hour",15,1.918,1.714,0.679,"","","",""],["hour",16,0.802,0.704,0.635,"","","",""],["hour",17,0.407,0.907,0.331,"","","",""],["hour",18,0.099,1.046,0,"","","",""],["hour",19,0.005,0.893,0,"","","",""],["hour",20,0.004,0.775,0,"","","",""],["hour",21,0.004,0.603,0,"","","",""],["hour",22,0.003,0.413,0,"","","",""],["hour",23,0.003,0.394,0,"","","",""],["day",46315,20.573,0.4158,12.6411,"","","",""],["day",46316,31.4335,0.3651,30.128,"","","",""],["day",46317,34.3608,0.1632,28.0808,"","","",""],["day",46318,36.5747,0.1009,31.5947,"","","",""],["day",46319,40.6186,0.072,34.8489,"","","",""],["day",46320,29.2033,0.0302,23.6762,"","","",""],["day",46321,31.4623,0.2007,25.6476,"","","",""],["day",46322,45.4624,0.052,38.8242,"","","",""],["day",46323,38.1938,0.0781,28.5926,"","","",""],["day",46324,37.4331,0.0796,33.0247,"","","",""],["day",46325,40.4742,0.0569,35.0484,"","","",""],["day",46326,27.1084,0.0613,22.532,"","","",""],["day",46327,39.2365,0.8854,30.8401,"","","",""],["day",46328,33.5241,0.5551,30.375,"","","",""],["day",46329,32.5207,0.6204,27.1435,"","","",""],["day",46330,38.9187,0.4402,31.0151,"","","",""],["day",46331,38.1514,0.0347,31.0699,"","","",""],["day",46332,34.0033,0.055,28.1218,"","","",""],["day",46333,29.5378,0.0233,22.0756,"","","",""],["day",46334,29.922,0,22.799,"","","",""],["day",46335,28.6501,0,23.7167,"","","",""],["day",46336,43.7476,0,36.7084,6.4543,34,100,4.1],["day",46337,39.1272,0,35.4788,6.4252,39,100,7.8],["day",46338,47.4077,0.3681,40.1324,6.3368,35,100,4],["day",46339,46.953,0,40.3104,6.4667,39,100,6.4],["day",46340,32.8701,0.0006,24.9275,5.7085,39,100,2.8],["day",46341,33.3001,0,29.0772,6.0572,53,100,4.7],["day",46342,45.7702,0,37.4917,6.514,42,100,2.9],["day",46343,33.4114,0,26.7552,6.1861,52,100,3.5]];
+const SNAP=[["kpi","cost",135000,"","","","","",""],["kpi","saved",3045.73,"","","","","",""],["kpi","gen",1104.5487,"","","","","",""],["kpi","use",916.9997,"","","","","",""],["kpi","grid",4.6586,"","","","","",""],["kpi","selfc",0.826,"","","","","",""],["kpi","cover",0.9949,"","","","","",""],["kpi","month",3665.8695,"","","","","",""],["kpi","annual",43990.4338,"","","","","",""],["kpi","loss",5.9615,"","","","","",""],["kpi","lossp",0.168,"","","","","",""],["kpi","from",46315,"","","","","",""],["kpi","to",46345,"","","","","",""],["kpi","hourly_label","10\u201315 Nov","","","","","",""],["hour",0,0.003,0.414,0,"","","",""],["hour",1,0.003,0.366,0,"","","",""],["hour",2,0.003,0.36,0,"","","",""],["hour",3,0.003,0.326,0,"","","",""],["hour",4,0.017,0.351,0,"","","",""],["hour",5,0.31,1.196,0,"","","",""],["hour",6,1.907,1.339,0,"","","",""],["hour",7,4.303,2.666,0,"","","",""],["hour",8,5.882,2.615,0,"","","",""],["hour",9,6.356,2.367,0.096,"","","",""],["hour",10,4.881,2.704,0.525,"","","",""],["hour",11,2.611,2.251,0.887,"","","",""],["hour",12,4.007,4.069,0.692,"","","",""],["hour",13,3.543,3.046,0.542,"","","",""],["hour",14,3.467,2.896,0.617,"","","",""],["hour",15,1.918,1.714,0.679,"","","",""],["hour",16,0.802,0.704,0.635,"","","",""],["hour",17,0.407,0.907,0.331,"","","",""],["hour",18,0.099,1.046,0,"","","",""],["hour",19,0.005,0.893,0,"","","",""],["hour",20,0.004,0.775,0,"","","",""],["hour",21,0.004,0.603,0,"","","",""],["hour",22,0.003,0.413,0,"","","",""],["hour",23,0.003,0.394,0,"","","",""],["day",46315,20.573,0.4158,12.6411,1.848,54,99,2.9],["day",46316,31.4335,0.3651,30.128,5.5145,42,100,6.1],["day",46317,34.3608,0.1632,28.0808,5.4067,35,100,6.5],["day",46318,36.5747,0.1009,31.5947,5.4452,39,100,5.1],["day",46319,40.6186,0.072,34.8489,5.6103,45,100,6.6],["day",46320,29.2033,0.0302,23.6762,3.8831,39,100,3.7],["day",46321,31.4623,0.2007,25.6476,4.9438,36,100,1.6],["day",46322,45.4624,0.052,38.8242,6.915,36,100,5.0],["day",46323,38.1938,0.0781,28.5926,5.9883,36,100,5.1],["day",46324,37.4331,0.0796,33.0247,5.7861,39,100,4.3],["day",46325,40.4742,0.0569,35.0484,6.2953,38,100,3.9],["day",46326,27.1084,0.0613,22.532,6.0066,37,100,4.7],["day",46327,39.2365,0.8854,30.8401,6.0538,34,100,3.8],["day",46328,33.5241,0.5551,30.375,5.9614,39,100,3.0],["day",46329,32.5207,0.6204,27.1435,6.1622,39,100,4.2],["day",46330,38.9187,0.4402,31.0151,6.2081,37,100,4.2],["day",46331,38.1514,0.0347,31.0699,6.2593,38,100,3.8],["day",46332,34.0033,0.055,28.1218,6.15,38,100,3.8],["day",46333,29.5378,0.0233,22.0756,5.9581,39,100,2.8],["day",46334,29.922,0,22.799,6.1891,38,100,1.9],["day",46335,28.6501,0,23.7167,6.2297,43,100,1.6],["day",46336,43.7476,0,36.7084,6.4543,34,100,4.1],["day",46337,39.1272,0,35.4788,6.4252,39,100,7.8],["day",46338,47.4077,0.3681,40.1324,6.3368,35,100,4.0],["day",46339,46.953,0,40.3104,6.4667,39,100,6.4],["day",46340,32.8701,0.0006,24.9275,5.7085,39,100,2.8],["day",46341,33.3001,0,29.0772,6.0572,53,100,4.7],["day",46342,45.7702,0,37.4917,6.514,42,100,2.9],["day",46343,33.4114,0,26.7552,6.1861,52,100,3.5],["day",46344,26.8505,0,23.2254,5.7562,58,100,2.4],["day",46345,37.7482,0,31.0968,5.9731,46,100,6.5],["month",46296,412.8981,344.6392,1.6758,1031.3395,"","",""],["month",46327,691.6506,572.3605,2.9828,2014.3927,"","",""]];
 const $=i=>document.getElementById(i),sv=(a,b)=>{try{localStorage.setItem(a,b)}catch(e){}},gt=a=>{try{return localStorage.getItem(a)}catch(e){return null}};
 const R=n=>'R\u00a0'+Math.round(n).toLocaleString('en-ZA'),F=(n,d=1)=>n.toLocaleString('en-ZA',{minimumFractionDigits:d,maximumFractionDigits:d}),P=n=>(n*100).toFixed(1)+'%';
 const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?null:n};
-const dstr=(s,y)=>new Date(Math.round((s-25569)*864e5)).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC',...(y?{year:'numeric'}:{})});
+const dt=s=>new Date(Math.round((s-25569)*864e5)),dstr=(s,y)=>dt(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC',...(y?{year:'numeric'}:{})}),ym=s=>{const d=dt(s);return d.getUTCFullYear()*12+d.getUTCMonth()};
 function parseCSV(t){const o=[];let r=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}else if(c=='"')q=true;else if(c==','){r.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;r.push(f);f='';o.push(r);r=[]}else f+=c}if(f||r.length){r.push(f);o.push(r)}return o.slice(1)}
-function build(rows){const k={},days=[],hours=[];for(const r of rows){if(r[0]=='kpi')k[r[1]]=r[1]=='hourly_label'?r[2]:num(r[2]);else if(r[0]=='hour')hours.push([num(r[2])||0,num(r[3])||0,num(r[4])||0]);else if(r[0]=='day'&&num(r[1])!=null)days.push({s:num(r[1]),pv:num(r[2])||0,gr:num(r[3])||0,ld:num(r[4])||0,ls:num(r[5]),mn:num(r[6]),mx:num(r[7]),hf:num(r[8])})}return{k,days,hours}}
-const S={D:null,rng:30,sel:0};
+function build(rows){const k={},days=[],hours=[],months=[];for(const r of rows){if(r[0]=='kpi')k[r[1]]=r[1]=='hourly_label'?r[2]:num(r[2]);else if(r[0]=='hour')hours.push([num(r[2])||0,num(r[3])||0,num(r[4])||0]);else if(r[0]=='day'&&num(r[1])!=null)days.push({s:num(r[1]),pv:num(r[2])||0,gr:num(r[3])||0,ld:num(r[4])||0,ls:num(r[5]),mn:num(r[6]),mx:num(r[7]),hf:num(r[8])});else if(r[0]=='month'&&num(r[1])!=null)months.push({s:num(r[1]),pv:num(r[2])||0,use:num(r[3])||0,gr:num(r[4])||0,sv:num(r[5])||0})}return{k,days,hours,months}}
+const S={D:null,rng:30,sel:null};
 async function load(){const url=CSV_URL||gt('csvurl');if(!url){show(build(SNAP),'Demo data',0);return}
  try{const c=new AbortController();setTimeout(()=>c.abort(),12000);const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{signal:c.signal,cache:'no-store'});if(!r.ok)throw 0;const t=await r.text(),D=build(parseCSV(t));if(!D.days.length)throw 0;sv('lastcsv',t);sv('lastat',String(Date.now()));show(D,'Live '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}),1)}
  catch(e){const t=gt('lastcsv');if(t)show(build(parseCSV(t)),'Offline, saved '+new Date(+gt('lastat')||0).toLocaleDateString('en-GB',{day:'numeric',month:'short'}),0);else show(build(SNAP),'Can\u2019t reach sheet',0)}}
-function show(D,status,live){S.D=D;S.sel=null;$('st').textContent=status;$('rf').classList.toggle('live',!!live);head();bars();led();day();soc();$('dt').innerHTML='<tr><th>Day</th><th>Solar</th><th>Home</th><th>Grid</th></tr>'+D.days.slice().reverse().map(d=>`<tr><td>${dstr(d.s)}</td><td>${F(d.pv)}</td><td>${F(d.ld)}</td><td>${F(d.gr,2)}</td></tr>`).join('')}
-function head(){const K=S.D.k,has=K.cost>0;$('hero').classList.toggle('nocost',!has);$('saved').textContent=R(K.saved);$('since').textContent='saved on electricity since '+dstr(K.from)+', and '+F(K.use+0,0)+' kWh used';if(!has)return;
+const dl=x=>`<dl><div><dt>Solar made</dt><dd>${F(x.pv)} <small>kWh</small></dd></div><div><dt>Home used</dt><dd>${F(x.ld)} <small>kWh</small></dd></div><div><dt>From grid</dt><dd>${F(x.gr,2)} <small>kWh</small></dd></div>`+(x.mn!=null?`<div><dt>Battery</dt><dd>${x.mn}\u2013${x.mx}<small>%</small></dd></div><div><dt>Full for</dt><dd>${F(x.hf)} <small>h</small></dd></div><div><dt>Lost</dt><dd>${F(x.ls)} <small>kWh</small></dd></div>`:'')+'</dl>';
+function show(D,status,live){S.D=D;S.sel=null;$('st').textContent=status;$('rf').classList.toggle('live',!!live);head();home();bars();months();battery();day();
+ $('dt').innerHTML='<tr><th>Day</th><th>Solar</th><th>Home</th><th>Grid</th></tr>'+D.days.slice().reverse().map(d=>`<tr><td>${dstr(d.s)}</td><td>${F(d.pv)}</td><td>${F(d.ld)}</td><td>${F(d.gr,2)}</td></tr>`).join('');route()}
+function head(){const K=S.D.k,has=K.cost>0;$('hero').classList.toggle('nocost',!has);$('saved').textContent=R(K.saved);$('since').textContent='saved on electricity since '+dstr(K.from);if(!has)return;
  const p=K.saved/K.cost;$('pct').innerHTML=P(p)+' of '+R(K.cost)+' <span>paid back</span>';requestAnimationFrame(()=>requestAnimationFrame(()=>$('fill').style.transform='scaleX('+Math.max(p,.012)+')'));
  const ys=[1,.8,.6].map(f=>K.cost/(K.annual*f)),mx=Math.ceil(ys[2]+.5),pc=y=>(y/mx*100)+'%';
  $('pay').innerHTML='Paid back in about <b>'+F(ys[0])+' to '+F(ys[2])+' years</b>';
  $('trk').innerHTML=`<div class="span" style="left:${pc(ys[0])};width:${(ys[2]-ys[0])/mx*100}%"></div>`+ys.map(y=>`<div class="mk" style="left:${pc(y)}"><i>${F(y)}</i></div>`).join('');
  $('pn').textContent='Markers show the result if the rest of the year earns 100%, 80% or 60% of today\u2019s monthly saving ('+R(K.month)+').'}
+const mname=(s,l)=>dt(s).toLocaleDateString('en-GB',{month:l?'long':'short',year:'numeric',timeZone:'UTC'});
+function mstats(m){const D=S.D,mk=ym(m.s),ds=D.days.filter(d=>ym(d.s)==mk),n=ds.length||1,y=dt(m.s).getUTCFullYear(),mo=dt(m.s).getUTCMonth(),dim=new Date(Date.UTC(y,mo+1,0)).getUTCDate(),f=ds[0],l=ds[ds.length-1],last=D.days[D.days.length-1],best=ds.reduce((a,b)=>b.pv>a.pv?b:a,ds[0]||{pv:0,s:m.s});
+ const tag=(f&&dt(f.s).getUTCDate()>1?'from '+dstr(f.s)+' \u00b7 ':'')+(l&&l===last&&dt(l.s).getUTCDate()<dim?'so far \u00b7 ':'')+(ds.length||0)+' days';return{n,best,tag,avg:m.pv/n,cov:m.use?1-m.gr/m.use:0}}
+function home(){const D=S.D,m=D.months.slice().sort((a,b)=>b.s-a.s)[0],last=D.days[D.days.length-1];
+ if(m){const t=mstats(m);$('mt').textContent=mname(m.s,1);$('mo').innerHTML=`<div class="mbig">${R(m.sv)}</div><div class="msub">saved \u00b7 ${t.tag}</div><dl><div><dt>Solar made</dt><dd>${F(m.pv,0)} <small>kWh</small></dd></div><div><dt>Home used</dt><dd>${F(m.use,0)} <small>kWh</small></dd></div><div><dt>From grid</dt><dd>${F(m.gr)} <small>kWh</small></dd></div></dl>`}
+ $('ld').innerHTML=`<div class="rdh">${dstr(last.s,1)}</div>`+dl(last)}
 const vis=()=>{const a=S.D.days;return S.rng?a.slice(-S.rng):a};
 function bars(){const d=vis(),n=d.length;if(S.sel==null||S.sel>=n)S.sel=n-1;const W=360,H=140,pl=26,pb=20,pt=6,st=(W-pl)/n,bw=Math.max(2,st*.68),mx=Math.max(10,...d.map(x=>Math.max(x.pv,x.ld))),y=v=>pt+(H-pt-pb)*(1-v/mx);let h='';
  [0,.5,1].forEach(t=>{h+=`<line class="gl" x1="${pl}" x2="${W}" y1="${y(mx*t)}" y2="${y(mx*t)}"/><text class="ax" x="0" y="${y(mx*t)+4}">${Math.round(mx*t)}</text>`});
  h+=`<rect class="hl" x="${pl+S.sel*st}" y="${pt}" width="${st}" height="${H-pt-pb}" rx="3"/>`;
  d.forEach((x,i)=>{const bx=pl+i*st+(st-bw)/2;h+=`<rect class="sun${i==S.sel?' on':''}" x="${bx}" y="${y(x.pv)}" width="${bw}" height="${H-pb-y(x.pv)}" rx="1.5"/><rect class="use" x="${bx-1}" y="${y(x.ld)-1.5}" width="${bw+2}" height="3"/>`});
  [0,Math.floor((n-1)/2),n-1].forEach((i,k)=>h+=`<text class="ax" x="${pl+i*st+st/2}" y="${H-4}" text-anchor="${k==0?'start':k==2?'end':'middle'}">${dstr(d[i].s)}</text>`);
- $('bars').innerHTML=h;const x=d[S.sel];
- $('rd').innerHTML=`<div class="rdh">${dstr(x.s,1)}</div><dl><div><dt>Solar made</dt><dd>${F(x.pv)} <small>kWh</small></dd></div><div><dt>Home used</dt><dd>${F(x.ld)} <small>kWh</small></dd></div><div><dt>From grid</dt><dd>${F(x.gr,2)} <small>kWh</small></dd></div>`+(x.mn!=null?`<div><dt>Battery</dt><dd>${x.mn}\u2013${x.mx}<small>%</small></dd></div><div><dt>Full for</dt><dd>${F(x.hf)} <small>h</small></dd></div><div><dt>Lost</dt><dd>${F(x.ls)} <small>kWh</small></dd></div>`:'')+'</dl>';
+ $('bars').innerHTML=h;$('rd').innerHTML=`<div class="rdh">${dstr(d[S.sel].s,1)}</div>`+dl(d[S.sel]);
  $('chips').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',(+b.dataset.r)==S.rng))}
 $('chips').onclick=e=>{const b=e.target.closest('button');if(b){S.rng=+b.dataset.r;S.sel=null;bars()}};
 const pick=e=>{const r=$('bars').getBoundingClientRect(),n=vis().length,i=Math.floor(((e.clientX-r.left)/r.width*360-26)/((360-26)/n));if(i>=0&&i<n){S.sel=i;bars()}};
 $('bars').addEventListener('pointerdown',pick);$('bars').addEventListener('pointermove',e=>{if(e.buttons)pick(e)});
 $('bars').addEventListener('keydown',e=>{const n=vis().length;if(e.key=='ArrowLeft'){S.sel=Math.max(0,S.sel-1);bars();e.preventDefault()}if(e.key=='ArrowRight'){S.sel=Math.min(n-1,S.sel+1);bars();e.preventDefault()}});
-function led(){const K=S.D.k,bar=v=>`<div class="mini"><i style="width:${v*100}%"></i></div>`,r=(a,b,c='')=>`<div class="row"><div><span>${a}</span>${c}</div><b>${b}</b></div>`;
- $('led').innerHTML=r('Solar made',F(K.gen,0)+' kWh')+r('Home used',F(K.use,0)+' kWh')+r('Bought from the grid',F(K.grid)+' kWh')+r('Home covered by solar and battery',P(K.cover),bar(K.cover))+r('Solar that reached the home',P(K.selfc),bar(K.selfc))+r('Lost in inverter and battery',F(K.loss)+' kWh a day')}
+function months(){const D=S.D,K=D.k,bar=v=>`<div class="mini"><i style="width:${v*100}%"></i></div>`,r=(a,b,c='')=>`<div class="row"><div><span>${a}</span>${c}</div><b>${b}</b></div>`;
+ $('th').textContent='Since '+dstr(K.from);
+ $('led').innerHTML=r('Saved on electricity',R(K.saved))+r('Solar made',F(K.gen,0)+' kWh')+r('Home used',F(K.use,0)+' kWh')+r('Bought from the grid',F(K.grid)+' kWh')+r('Home covered by solar and battery',P(K.cover),bar(K.cover));
+ $('ml').innerHTML=D.months.slice().sort((a,b)=>b.s-a.s).map(m=>{const t=mstats(m);return`<article class="mc"><div class="mh"><b>${mname(m.s,1)}</b><span class="tag">${t.tag}</span></div><div class="msav">${R(m.sv)} <small>saved</small></div><dl><div><dt>Solar made</dt><dd>${F(m.pv,0)} <small>kWh</small></dd></div><div><dt>Home used</dt><dd>${F(m.use,0)} <small>kWh</small></dd></div><div><dt>From grid</dt><dd>${F(m.gr)} <small>kWh</small></dd></div><div><dt>Solar a day</dt><dd>${F(t.avg)} <small>kWh</small></dd></div><div><dt>Best day</dt><dd>${F(t.best.pv)} <small>${dstr(t.best.s)}</small></dd></div><div><dt>Covered</dt><dd>${P(t.cov)}</dd></div></dl></article>`}).join('')}
+function battery(){const D=S.D,K=D.k,b=D.days.filter(x=>x.mn!=null),r=(a,c)=>`<div class="row"><span>${a}</span><b>${c}</b></div>`;
+ $('bl').innerHTML=r('Lost in inverter and battery',F(K.loss)+' kWh a day')+(b.length?r('Battery full on average',F(b.reduce((a,x)=>a+x.hf,0)/b.length)+' h a day')+r('Lowest charge so far',Math.min(...b.map(x=>x.mn))+'%'):'');
+ const d=b.slice(-7).reverse();$('soc').innerHTML=d.length?d.map(x=>`<div class="soc"><span>${dstr(x.s)}</span><div class="t"><i style="left:${x.mn}%;width:${x.mx-x.mn}%"></i></div><em>${x.mn}\u2013${x.mx}% \u00b7 ${F(x.hf)} h</em></div>`).join(''):'<p class="note">No battery data in the sheet yet.</p>'}
 function day(){const H=S.D.hours,W=360,pl=24,x=i=>pl+i*(W-pl-6)/23,top=Math.ceil(Math.max(...H.map(q=>Math.max(q[0],q[1])))),y=v=>8+112*(1-v/top);let h='';
  [0,top/2,top].forEach(v=>h+=`<line class="gl" x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="0" y="${y(v)+4}">${v}</text>`);
  h+=`<path d="M${x(0)},${y(0)}${H.map((q,i)=>`L${x(i)},${y(q[0])}`).join('')}L${x(23)},${y(0)}Z" fill="var(--sun)" opacity=".4"/><polyline fill="none" stroke="var(--sun)" stroke-width="2" points="${H.map((q,i)=>x(i)+','+y(q[0])).join(' ')}"/><polyline fill="none" stroke="var(--use)" stroke-width="2.4" points="${H.map((q,i)=>x(i)+','+y(q[1])).join(' ')}"/>`;
@@ -103,8 +143,10 @@ function day(){const H=S.D.hours,W=360,pl=24,x=i=>pl+i*(W-pl-6)/23,top=Math.ceil
  [0,6,12,18,23].forEach(i=>h+=`<text class="ax" x="${x(i)}" y="136" text-anchor="middle">${String(i).padStart(2,'0')}:00</text>`);$('day').innerHTML=h;
  const f=H.map((q,i)=>q[2]>=.5?i:-1).filter(i=>i>=0),hh=i=>String(i).padStart(2,'0')+':00';
  $('dn').textContent=f.length?`The battery is usually full from about ${hh(f[0])} to ${hh(f[f.length-1]+1)}. Solar output is held back in that time to match what the home uses.`:'The battery rarely reaches full on a typical day.'}
-function soc(){const d=S.D.days.filter(x=>x.mn!=null).slice(-7).reverse();$('soc').innerHTML=d.length?d.map(x=>`<div class="soc"><span>${dstr(x.s)}</span><div class="t"><i style="left:${x.mn}%;width:${x.mx-x.mn}%"></i></div><em>${x.mn}\u2013${x.mx}% \u00b7 ${F(x.hf)} h</em></div>`).join(''):'<p class="note">No battery data in the sheet yet.</p>'}
+const PG=['home','days','months','battery'];
+function route(){let h=(location.hash||'#home').slice(1);if(!PG.includes(h))h='home';PG.forEach(p=>{$('p-'+p).hidden=p!=h;$('n-'+p).setAttribute('aria-current',p==h?'page':'false')});if(S.D&&h=='days')bars()}
+addEventListener('hashchange',()=>{route();scrollTo(0,0)});
 $('rf').onclick=load;$('cn').onclick=()=>{const u=prompt('Paste the published CSV link for the App data tab (leave empty to clear):',gt('csvurl')||'');if(u!==null){sv('csvurl',u.trim());load()}};
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});load();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});route();load();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
