@@ -5,6 +5,15 @@ MAJOR for changes that need a new sheet layout, MINOR for new features or screen
 The current version is in `VERSION`, at the top of the script in `index.html` (`VERSION`) and in `sw.js`.
 The Google Sheet keeps its own history on its "Change log" tab.
 
+## 1.5.0 - 2026-11-21
+- New Power page (fifth tab): average hours a day above each solar power level (500 W to 7,000 W), where the energy is made by 1 kW power band, and the daily peak output. Choose 14 days, 30 days or All; partial days are left out.
+- Reads the new "level" rows on the sheet's App data tab (from the Solar Power Levels tab).
+
+## 1.4.0 - 2026-11-20
+- Warning banner when the newest day in the sheet is 3 or more days old (change `STALE_DAYS` in `index.html` to adjust). Not shown for demo data.
+- Days flagged as partial in the sheet are tagged "partial day" and left out of the average solar a day, the best day and the average battery-full hours.
+- The sheet's App data tab now carries a partial-day flag in column J.
+
 ## 1.3.0 - 2026-11-20
 - Demo data is now sample numbers, so no personal figures are stored in the public repo.
 - The typical-day chart shows the dates it covers; the home screen shows the date the data runs to.
