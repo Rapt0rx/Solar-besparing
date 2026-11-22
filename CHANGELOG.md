@@ -5,6 +5,10 @@ MAJOR for changes that need a new sheet layout, MINOR for new features or screen
 The current version is in `VERSION`, at the top of the script in `index.html` (`VERSION`) and in `sw.js`.
 The Google Sheet keeps its own history on its "Change log" tab.
 
+## 1.6.0 - 2026-11-21
+- Power page: line graph of sun hours each day (hours with solar output above 100 W), with a dashed average line. Tap or drag across it, or use the arrow keys, to read a day. Shows the average and the total sun hours for the chosen period.
+- Reads the new sun-hours value (column U of the "level" rows on the sheet's App data tab).
+
 ## 1.5.0 - 2026-11-21
 - New Power page (fifth tab): average hours a day above each solar power level (500 W to 7,000 W), where the energy is made by 1 kW power band, and the daily peak output. Choose 14 days, 30 days or All; partial days are left out.
 - Reads the new "level" rows on the sheet's App data tab (from the Solar Power Levels tab).
