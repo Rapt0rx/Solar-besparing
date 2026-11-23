@@ -5,6 +5,11 @@ MAJOR for changes that need a new sheet layout, MINOR for new features or screen
 The current version is in `VERSION`, at the top of the script in `index.html` (`VERSION`) and in `sw.js`.
 The Google Sheet keeps its own history on its "Change log" tab.
 
+## 1.7.0 - 2026-11-22
+- New Meter page (sixth tab) for the prepaid meter: units left, use over the last 7 days, a chart of the reading over time with top-ups and the solar start marked, a comparison of meter use with the inverter's grid import (use per day before and after solar), the list of top-ups with cost and price per kWh, and the latest readings.
+- "Add a reading in the sheet" button opens the sheet on the Prepaid Meter tab (it asks once for the sheet link and remembers it on the device; the app itself stays read-only).
+- Reads the new "mstat" and "meter" rows on the sheet's App data tab.
+
 ## 1.6.0 - 2026-11-21
 - Power page: line graph of sun hours each day (hours with solar output above 100 W), with a dashed average line. Tap or drag across it, or use the arrow keys, to read a day. Shows the average and the total sun hours for the chosen period.
 - Reads the new sun-hours value (column U of the "level" rows on the sheet's App data tab).
