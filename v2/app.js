@@ -2,6 +2,7 @@ import {URL as PROJECT_URL,PUBLIC_KEY} from "./config.js";
 import {number,dayRange,summarize,entryPayload} from "./model.js";
 import {financialModel} from "./finance.js";
 import {energyDetail} from "./detail.js";
+import {parseTelemetry} from "./import.js";
 const $=id=>document.getElementById(id);
 const state={session:null,epoch:0,period:"month",page:"home",data:null,busy:false,refresh:null,loadId:0};
 const fmt=(v,d=1)=>number(v)===null?"—":Number(v).toLocaleString("en-ZA",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -12,7 +13,7 @@ const localNow=()=>new Date(Date.now()+7200000).toISOString().slice(0,16);
 function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function status(id,message,error=false){$(id).textContent=message;$(id).classList.toggle("error",error)}
 function clearData(){state.data=null;for(const id of ["homeCards","homeFlow","quality","energyCards","energyChart","batteryStats","powerSummary","peakChart","sunChart","thresholdChart","bandChart","monthlyEnergy","socChart","mpptChart","voltageSummary","voltageChart","hourlyCaption","hourlyChart","financialCards","purchaseSummary","monthlyFinancialRows","forecastRows","utilityCards","meterRows","waterRows","purchaseRows","connection"])$(id).replaceChildren();$("periodLabel").textContent="";status("appStatus","");status("entryStatus","")}
-function signedOut(message=""){state.epoch++;state.session=null;state.refresh=null;state.busy=false;state.loadId++;clearData();$("app").hidden=true;$("nav").hidden=true;$("logout").hidden=true;$("login").hidden=false;$("loginForm").reset();$("entryForm").reset();$("signIn").disabled=false;$("saveEntry").disabled=false;$("refresh").disabled=false;entryType();status("loginStatus",message,!!message)}
+function signedOut(message=""){stopTelemetry=true;state.epoch++;$("telemetryFile").value="";$("importTelemetry").disabled=false;$("cancelTelemetry").hidden=true;$("importProgress").hidden=true;$("importProgress").value=0;status("importStatus","");state.session=null;state.refresh=null;state.busy=false;state.loadId++;clearData();$("app").hidden=true;$("nav").hidden=true;$("logout").hidden=true;$("login").hidden=false;$("loginForm").reset();$("entryForm").reset();$("signIn").disabled=false;$("saveEntry").disabled=false;$("refresh").disabled=false;entryType();status("loginStatus",message,!!message)}
 async function request(path,{method="GET",body,token}={}){
  const headers={apikey:PUBLIC_KEY,Accept:"application/json"};if(token)headers.Authorization="Bearer "+token;if(body!==undefined)headers["Content-Type"]="application/json";
  const response=await fetch(PROJECT_URL+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store",credentials:"omit",redirect:"error",signal:AbortSignal.timeout(20000)});
@@ -120,3 +121,33 @@ $("entryForm").addEventListener("submit",async e=>{e.preventDefault();if(state.b
 });
 window.addEventListener("pageshow",e=>{if(e.persisted)signedOut()});
 entryType();
+
+let stopTelemetry=false, activeImport=null;
+$("cancelTelemetry").addEventListener("click",()=>{stopTelemetry=true;$("cancelTelemetry").disabled=true;status("importStatus","Stopping after current batch…")});
+$("importTelemetry").addEventListener("click",async()=>{
+ if(activeImport||!state.session)return;
+ const file=$("telemetryFile").files?.[0];
+ if(!file){status("importStatus","Choose the prepared CSV file first.",true);return}
+ if(file.size>20*1024*1024){status("importStatus","File exceeds 20 MB.",true);return}
+ const epoch=state.epoch,run={};activeImport=run;stopTelemetry=false;
+ $("importTelemetry").disabled=true;$("telemetryFile").disabled=true;$("cancelTelemetry").hidden=false;$("cancelTelemetry").disabled=false;$("importProgress").hidden=false;$("importProgress").value=0;
+ let accepted=0,inserted=0,existing=0;
+ try{
+  status("importStatus","Validating every row…");
+  const data=parseTelemetry(await file.text());if(epoch!==state.epoch||stopTelemetry)return;
+  $("importProgress").max=data.rows.length;
+  status("importStatus",data.rows.length.toLocaleString()+" validated timestamps. Importing…");
+  for(let i=0;i<data.rows.length;i+=500){
+   if(stopTelemetry||epoch!==state.epoch)break;
+   const chunk=data.rows.slice(i,i+500),result=await api("rpc/solar_import_telemetry",{method:"POST",body:{p_rows:chunk}});
+   if(epoch!==state.epoch)return;
+   if(result?.accepted!==chunk.length||!Number.isInteger(result.inserted)||!Number.isInteger(result.existing)||result.inserted<0||result.existing<0||result.inserted+result.existing!==chunk.length)throw Error("Batch response could not be verified");
+   accepted+=result.accepted;inserted+=result.inserted;existing+=result.existing;$("importProgress").value=accepted;
+   status("importStatus",accepted.toLocaleString()+" / "+data.rows.length.toLocaleString()+" verified · "+inserted.toLocaleString()+" new · "+existing.toLocaleString()+" already present");
+  }
+  if(epoch!==state.epoch)return;
+  if(accepted===data.rows.length){status("importStatus","Import complete: "+accepted.toLocaleString()+" timestamps verified, "+inserted.toLocaleString()+" inserted, "+existing.toLocaleString()+" already present. Daily summary records were not changed.");$("telemetryFile").value=""}
+  else status("importStatus","Stopped after "+accepted.toLocaleString()+" confirmed rows. Re-select the same CSV to resume.");
+ }catch(e){if(epoch===state.epoch)status("importStatus","Stopped after "+accepted.toLocaleString()+" confirmed rows: "+e.message+". Retry the same CSV; identical rows will be skipped.",true)}
+ finally{if(activeImport===run){activeImport=null;if(epoch===state.epoch){$("importTelemetry").disabled=false;$("telemetryFile").disabled=false;$("cancelTelemetry").hidden=true}else{$("telemetryFile").disabled=false}}}
+});
