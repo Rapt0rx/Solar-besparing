@@ -1,6 +1,7 @@
 import {URL as PROJECT_URL,PUBLIC_KEY} from "./config.js";
 import {number,dayRange,summarize,entryPayload} from "./model.js";
 import {financialModel} from "./finance.js";
+import {energyDetail} from "./detail.js";
 const $=id=>document.getElementById(id);
 const state={session:null,epoch:0,period:"month",page:"home",data:null,busy:false,refresh:null,loadId:0};
 const fmt=(v,d=1)=>number(v)===null?"—":Number(v).toLocaleString("en-ZA",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -10,7 +11,7 @@ const localDate=t=>new Date(t).toLocaleString("en-ZA",{timeZone:"Africa/Johannes
 const localNow=()=>new Date(Date.now()+7200000).toISOString().slice(0,16);
 function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function status(id,message,error=false){$(id).textContent=message;$(id).classList.toggle("error",error)}
-function clearData(){state.data=null;for(const id of ["homeCards","homeFlow","quality","energyCards","energyChart","batteryStats","financialCards","purchaseSummary","monthlyFinancialRows","forecastRows","utilityCards","meterRows","waterRows","purchaseRows","connection"])$(id).replaceChildren();$("periodLabel").textContent="";status("appStatus","");status("entryStatus","")}
+function clearData(){state.data=null;for(const id of ["homeCards","homeFlow","quality","energyCards","energyChart","batteryStats","powerSummary","peakChart","sunChart","thresholdChart","bandChart","monthlyEnergy","socChart","mpptChart","voltageSummary","voltageChart","hourlyCaption","hourlyChart","financialCards","purchaseSummary","monthlyFinancialRows","forecastRows","utilityCards","meterRows","waterRows","purchaseRows","connection"])$(id).replaceChildren();$("periodLabel").textContent="";status("appStatus","");status("entryStatus","")}
 function signedOut(message=""){state.epoch++;state.session=null;state.refresh=null;state.busy=false;state.loadId++;clearData();$("app").hidden=true;$("nav").hidden=true;$("logout").hidden=true;$("login").hidden=false;$("loginForm").reset();$("entryForm").reset();$("signIn").disabled=false;$("saveEntry").disabled=false;$("refresh").disabled=false;entryType();status("loginStatus",message,!!message)}
 async function request(path,{method="GET",body,token}={}){
  const headers={apikey:PUBLIC_KEY,Accept:"application/json"};if(token)headers.Authorization="Bearer "+token;if(body!==undefined)headers["Content-Type"]="application/json";
@@ -30,19 +31,56 @@ async function accessToken(){
 async function api(path,options={}){const epoch=state.epoch,token=await accessToken();if(epoch!==state.epoch)throw Error("Session changed");try{const result=await request("/rest/v1/"+path,{...options,token});if(epoch!==state.epoch)throw Error("Session changed");return result}catch(e){if(e.status===401&&epoch===state.epoch)signedOut("Session expired. Please sign in again.");throw e}}
 async function list(table,select,order){const all=[];let offset=0;for(;;){const query=new URLSearchParams({select,order,limit:"500",offset:String(offset)});const rows=await api(table+"?"+query);if(!Array.isArray(rows))throw Error("Unexpected database response");all.push(...rows);if(rows.length<500)return all;offset+=rows.length;if(offset>100000)throw Error("Reporting history exceeds preview limit")}}
 async function reload(){const epoch=state.epoch,id=++state.loadId;status("appStatus","Loading private Supabase data…");$("refresh").disabled=true;
- try{const [settings,days,meters,purchases,tariffs]=await Promise.all([
+ try{const [settings,days,meters,purchases,tariffs,hourly]=await Promise.all([
  list("solar_settings","installation_cost_zar,timezone,currency","owner_id.asc"),
- list("solar_daily","day,pv_kwh,load_kwh,grid_import_kwh,pv_covered_seconds,load_covered_seconds,grid_covered_seconds,mppt1_kwh,mppt2_kwh,soc_min_pct,soc_max_pct,pv_peak_w","day.asc"),
+ list("solar_daily","day,pv_kwh,load_kwh,grid_import_kwh,pv_covered_seconds,load_covered_seconds,grid_covered_seconds,mppt1_kwh,mppt2_kwh,soc_min_pct,soc_max_pct,pv_peak_w,mppt1_covered_seconds,mppt2_covered_seconds,battery_positive_kwh,battery_negative_kwh,grid_reverse_kwh,pv_above_seconds,pv_band_kwh,soc_covered_seconds,soc_full_seconds,voltage_covered_seconds,voltage_low_seconds","day.asc"),
  list("solar_meter_readings","meter_type,recorded_at,reading,unit,source","recorded_at.asc,meter_type.asc"),
  list("solar_purchases","recorded_at,units_kwh,paid_zar,estimated_units,source","recorded_at.asc"),
- list("solar_tariffs","effective_from,block_start_kwh,rate_zar_per_kwh,verified","effective_from.asc,block_start_kwh.asc")
+ list("solar_tariffs","effective_from,block_start_kwh,rate_zar_per_kwh,verified","effective_from.asc,block_start_kwh.asc"),
+ list("solar_hourly_profile","source_from,source_to,hour,pv_mean_kw,load_mean_kw,soc_full_fraction,pv_covered_seconds,load_covered_seconds,soc_covered_seconds","source_to.asc,source_from.asc,hour.asc")
  ]);if(epoch!==state.epoch||id!==state.loadId)return false;
- state.data={settings:settings[0]||null,days,meters,purchases,tariffs};render();status("appStatus","Connected · last retrieved "+localDate(Date.now()));return true
+ state.data={settings:settings[0]||null,days,meters,purchases,tariffs,hourly};render();status("appStatus","Connected · last retrieved "+localDate(Date.now()));return true
  }catch(e){if(epoch===state.epoch&&id===state.loadId)status("appStatus","Could not refresh: "+e.message+(state.data?". Previous data remains on screen.":""),true);return false}finally{if(epoch===state.epoch&&id===state.loadId)$("refresh").disabled=false}}
 function card(label,value,sub="",cls=""){const c=el("div",undefined,"card");c.append(el("small",label),el("div",value,"value "+cls));if(sub)c.append(el("small",sub));return c}
 function cards(id,items){$(id).replaceChildren(...items.map(x=>card(...x)))}
 function rows(id,items){$(id).replaceChildren(...items.map(([label,value])=>{const r=el("div",undefined,"row");r.append(el("span",label,"muted"),el("strong",value));return r}))}
 function table(id,values){$(id).replaceChildren(...values.map(values=>{const r=el("tr");for(const value of values)r.append(el("td",value));return r}))}
+function drawBars(id,groups,series,scale=null){
+ const container=$(id);container.replaceChildren();
+ if(!groups.length){container.append(el("p","No records for this period.","small"));return}
+ const max=scale??groups.reduce((m,g)=>Math.max(m,...series.map(s=>Math.max(0,number(g[s.key])??0))),1e-9);
+ const frag=document.createDocumentFragment();
+ for(const g of groups){const box=el("div",undefined,"barrow");box.append(el("div",g.label,"small"));
+ for(const s of series){const n=number(g[s.key]),line=el("div",undefined,"barlabel");line.append(el("span",s.label),el("span",quantity(n,s.unit,s.decimals??2)));box.append(line);
+ if(n!==null){const track=el("div",undefined,"track"),bar=el("i",undefined,s.cls);bar.style.width=Math.max(0,Math.min(100,n/max*100))+"%";track.append(bar);box.append(track)}}
+ frag.append(box)}container.append(frag)
+}
+const hours=v=>number(v)===null?null:Number(v)/3600;
+const kw=v=>number(v)===null?null:Number(v)/1000;
+function renderDetail(days,hourly,s){
+ const t=energyDetail(days),dayLabel=d=>d.day+([d.pv_covered_seconds,d.load_covered_seconds,d.grid_covered_seconds].some(v=>number(v)!==86400)?" · partial":"");
+ const history=[...days].reverse();
+ rows("powerSummary",[["Highest observed peak",t.peak?quantity(kw(t.peak.pv_peak_w),"kW",3)+" · "+t.peak.day:"—"],["Power duration records",t.aboveDays+" of "+days.length+" days"],["Energy band records",t.bandDays+" of "+days.length+" days"]]);
+ drawBars("peakChart",history.map(d=>({label:dayLabel(d),peak:kw(d.pv_peak_w)})),[{key:"peak",label:"Peak",unit:"kW",cls:"pv"}]);
+ drawBars("sunChart",history.map(d=>({label:dayLabel(d),sun:hours(d.pv_above_seconds?.[0])})),[{key:"sun",label:"Above 100 W",unit:"h",cls:"pv"}],24);
+ const thresholdNames=["100 W","500 W","1 kW","2 kW","3 kW","4 kW","5 kW","6 kW","7 kW"];
+ drawBars("thresholdChart",t.above?thresholdNames.map((label,i)=>({label,value:hours(t.above[i])})):[],[{key:"value",label:"Total observed",unit:"h",cls:"pv"}]);
+ const bandNames=["0–<1 kW","1–<2 kW","2–<3 kW","3–<4 kW","4–<5 kW","5–<6 kW","6–<7 kW","7 kW and above"];
+ drawBars("bandChart",t.bands?bandNames.map((label,i)=>({label,value:t.bands[i]})):[],[{key:"value",label:"Generated",unit:"kWh",cls:"pv"}]);
+ table("monthlyEnergy",t.months.slice().reverse().map(m=>[m.month,String(m.days),fmt(m.pv,2),fmt(m.load,2),fmt(m.grid,2)]));
+ rows("batteryStats",[["MPPT 1",quantity(s.mppt1,"kWh",2)],["MPPT 2",quantity(s.mppt2,"kWh",2)],["MPPT 1 share (equal coverage days)",t.mpptShare===null?"—":fmt(t.mpptShare*100,2)+"% · "+t.mpptDays+" days"],["Lowest observed battery SOC",quantity(s.socMin,"%",0)],["Highest observed battery SOC",quantity(s.socMax,"%",0)],["Time at SOC ≥99%",quantity(hours(t.fullSeconds),"h",2)],["SOC observation time",quantity(hours(t.socSeconds),"h",2)],["Battery positive power energy",quantity(t.batteryPositive,"kWh",2)],["Battery negative power energy",quantity(t.batteryNegative,"kWh",2)]]);
+ const soc=$("socChart");soc.replaceChildren();
+ for(const d of history){const box=el("div",undefined,"barrow"),mn=number(d.soc_min_pct),mx=number(d.soc_max_pct);box.append(el("div",d.day+(number(d.soc_covered_seconds)!==86400?" · incomplete SOC time":""),"small"));box.append(el("div",mn===null||mx===null?"Range unavailable":fmt(mn,0)+"–"+fmt(mx,0)+"%","barlabel"));
+ if(mn!==null&&mx!==null&&mn>=0&&mx<=100&&mx>=mn){const track=el("div",undefined,"soc-range"),bar=el("i");bar.style.left=mn+"%";bar.style.width=(mx-mn)+"%";track.append(bar);box.append(track)}box.append(el("div","Time at ≥99%: "+quantity(hours(d.soc_full_seconds),"h",2),"small"));soc.append(box)}
+ if(!history.length)soc.append(el("p","No battery records for this period.","small"));
+ drawBars("mpptChart",history.map(d=>({label:d.day+(number(d.mppt1_covered_seconds)!==86400||number(d.mppt2_covered_seconds)!==86400?" · partial":""),m1:d.mppt1_kwh,m2:d.mppt2_kwh})),[{key:"m1",label:"MPPT 1",unit:"kWh",cls:"pv"},{key:"m2",label:"MPPT 2",unit:"kWh",cls:"otherbar"}]);
+ rows("voltageSummary",[["Observed time below 50 V",quantity(hours(t.lowSeconds),"h",2)],["Voltage observation time",quantity(hours(t.voltageSeconds),"h",2)],["Reverse grid power energy",quantity(t.reverseGrid,"kWh",3)]]);
+ drawBars("voltageChart",history.map(d=>({label:d.day+(number(d.voltage_covered_seconds)!==86400?" · incomplete":""),low:hours(d.voltage_low_seconds),covered:hours(d.voltage_covered_seconds)})),[{key:"low",label:"Below 50 V",unit:"h",cls:"gridbar"},{key:"covered",label:"Observed",unit:"h",cls:"batbar"}],24);
+ const last=hourly.at(-1),profile=last?hourly.filter(r=>r.source_from===last.source_from&&r.source_to===last.source_to).sort((a,b)=>a.hour-b.hour):[];
+ $("hourlyCaption").textContent=last?last.source_from+" – "+last.source_to+" · SAST · fixed historical period":"Hourly history unavailable";
+ drawBars("hourlyChart",profile.map(r=>({label:String(r.hour).padStart(2,"0")+":00",pv:r.pv_covered_seconds>0?r.pv_mean_kw:null,load:r.load_covered_seconds>0?r.load_mean_kw:null})),[{key:"pv",label:"Solar mean",unit:"kW",cls:"pv"},{key:"load",label:"Load mean",unit:"kW",cls:"use"}]);
+ for(const [i,box] of Array.from($("hourlyChart").children).entries()){const r=profile[i];if(!r)continue;const fraction=number(r.soc_full_fraction);const p=r.soc_covered_seconds>0&&fraction!==null?fraction*100:null;box.append(el("div","SOC ≥99%: "+quantity(p,"%",1),"small"));if(p!==null){const track=el("div",undefined,"track"),bar=el("i",undefined,"batbar");bar.style.width=Math.min(100,Math.max(0,p))+"%";track.append(bar);box.append(track)}}
+}
 function render(){if(!state.data)return;const d=state.data,range=dayRange(d.days,state.period),s=summarize(range.rows),electric=d.meters.filter(r=>r.meter_type==="electricity"),water=d.meters.filter(r=>r.meter_type==="water"),latest=electric.at(-1),waterLast=water.at(-1);
  const periodText=range.end?range.start+" – "+range.end:"No daily history";
  $("periodLabel").textContent=periodText+" · anchored to latest recorded day";
@@ -55,7 +93,7 @@ function render(){if(!state.data)return;const d=state.data,range=dayRange(d.days
  rows("quality",[["Recorded days",String(s.count)],["Missing calendar days",String(Math.max(0,calendarDays-s.count))],["Partial / incomplete days",String(s.partial)],["Latest daily data",d.days.at(-1)?.day||"—"]]);
  const max=Math.max(1,...range.rows.flatMap(r=>[number(r.pv_kwh)||0,number(r.load_kwh)||0]));
  $("energyChart").replaceChildren(...range.rows.slice().reverse().map(r=>{const box=el("div",undefined,"barrow"),partial=["pv_covered_seconds","load_covered_seconds","grid_covered_seconds"].some(k=>number(r[k])!==86400);box.append(el("div",r.day+(partial?" · partial":""),"small"));for(const [key,label,cls] of [["pv_kwh","Solar","pv"],["load_kwh","Home","use"]]){const n=number(r[key]),line=el("div",undefined,"barlabel");line.append(el("span",label),el("span",quantity(n,"kWh")));box.append(line);if(n!==null){const t=el("div",undefined,"track"),i=el("i",undefined,cls);i.style.width=Math.max(0,Math.min(100,n/max*100))+"%";t.append(i);box.append(t)}}return box}));
- rows("batteryStats",[["MPPT 1",quantity(s.mppt1,"kWh")],["MPPT 2",quantity(s.mppt2,"kWh")],["Lowest battery SOC",quantity(s.socMin,"%",0)],["Highest battery SOC",quantity(s.socMax,"%",0)]]);
+ renderDetail(range.rows,d.hourly,s);
  const known=d.purchases.filter(p=>number(p.paid_zar)!==null),spent=known.length?known.reduce((a,p)=>a+Number(p.paid_zar),0):null;
  const fin=financialModel(d.days,d.tariffs,d.settings?.installation_cost_zar);
  cards("financialCards",[["System investment",money(d.settings?.installation_cost_zar),"All history"],["Known purchases",money(spent),"All recorded costs only"],["Estimated energy savings",money(fin.saving),fin.unpricedMonths?fin.unpricedMonths+" months not priced":"Configured tariffs · all recorded months"],["Investment recovered",fin.recovered===null?"—":fmt(fin.recovered*100,2)+"%","Modelled, not cash recovery"],["2027 annual scenario",money(fin.annual),"Provisional seasonal assumptions"],["Simple payback",fin.payback===null?"—":fmt(fin.payback,2)+" years","Cost ÷ projected annual saving"]]);
